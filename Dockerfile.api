@@ -1,0 +1,31 @@
+FROM rust:1.88 as builder
+
+WORKDIR /usr/src/app
+
+COPY Cargo.toml ./
+COPY common ./common
+COPY api ./api
+COPY ingestion ./ingestion
+COPY migrations ./migrations
+
+RUN cargo build --release --bin api
+RUN cargo build --release --bin ingestion
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y ca-certificates libssl3 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /usr/src/app/target/release/api /app/api
+COPY --from=builder /usr/src/app/target/release/ingestion /app/ingestion
+COPY --from=builder /usr/src/app/migrations /app/migrations
+
+ENV RUST_LOG=info
+ENV PORT=8080
+
+EXPOSE 8080
+
+CMD ["/app/api"]

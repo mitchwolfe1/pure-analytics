@@ -1,0 +1,37 @@
+# Build stage
+FROM rust:1.88 as builder
+
+WORKDIR /usr/src/app
+
+# Copy workspace files (need all members for workspace to work)
+COPY Cargo.toml ./
+COPY common ./common
+COPY ingestion ./ingestion
+COPY api ./api
+
+# Copy migrations
+COPY migrations ./migrations
+
+# Build the ingestion binary
+RUN cargo build --release --bin ingestion
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y ca-certificates libssl3 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the binary from builder
+COPY --from=builder /usr/src/app/target/release/ingestion /app/ingestion
+
+# Copy migrations
+COPY --from=builder /usr/src/app/migrations /app/migrations
+
+# Set environment variables
+ENV RUST_LOG=info
+
+CMD ["/app/ingestion"]
