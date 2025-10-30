@@ -2,6 +2,8 @@
 
 A Rust-based system for ingesting and serving bullion marketplace transaction data from Pure.
 
+Live deployment: https://pure-analytics-web.fly.dev/
+
 ## Project Structure
 
 ```
