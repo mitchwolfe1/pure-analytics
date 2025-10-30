@@ -1,18 +1,21 @@
-# Pure Trading - Bullion Marketplace Transaction Database
+# Pure Analytics
 
-A Rust-based system for ingesting and serving bullion marketplace transaction data from Pure.
+Real-time analytics platform for bullion marketplace transaction data from Pure.
 
-Live deployment: https://pure-analytics-web.fly.dev/
+**Live:** https://pure-analytics-web.fly.dev
 
-## Project Structure
+## Architecture
 
 ```
-pure-trading/
-├── common/           # Shared models and database code
-├── ingestion/        # Data ingestion service
-├── api/              # REST API service
-└── migrations/       # Database migrations
+pure-analytics/
+├── api/              # Rust REST API (Axum)
+├── ingestion/        # Data ingestion service with retry logic and rate limiting
+├── common/           # Shared models
+├── web/              # React + TypeScript frontend (Vite)
+└── migrations/       # PostgreSQL schema
 ```
+
+**Stack:** Rust (Axum, SQLx), React, TypeScript, PostgreSQL, Fly.io
 
 ## Database Schema
 
@@ -39,75 +42,26 @@ pure-trading/
 - `created_at` - Timestamp
 - `updated_at` - Timestamp
 
-## Quick Start with Docker
-
-The easiest way to run the entire stack:
+## Local Development
 
 ```bash
-# Build and start all services (Postgres, Ingestion, API)
 docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop all services
-docker-compose down
-
-# Stop and remove volumes (deletes database)
-docker-compose down -v
 ```
 
-The API will be available at `http://localhost:3000`
+API: http://localhost:3000
+Web: http://localhost:5173
 
-## Local Development Setup
-
-1. **Prerequisites**
-   - Rust (latest stable)
-   - PostgreSQL
-
-2. **Database Setup**
-   ```bash
-   # Create database
-   createdb pure_trading
-   ```
-
-3. **Environment Configuration**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your database credentials
-   ```
-
-4. **Build**
-   ```bash
-   cargo build
-   ```
-
-5. **Run Migrations**
-   Migrations run automatically when starting the ingestion service.
-
-## Services
-
-### Ingestion Service
-Fetches data from Pure marketplace endpoints and stores in the database.
+## Deployment
 
 ```bash
-cargo run --bin ingestion
+# API
+flyctl deploy --config fly.api.toml
+
+# Web
+cd web && flyctl deploy
 ```
 
-### API Service
-Provides REST API endpoints for accessing transaction data.
+## Environment Variables
 
-```bash
-cargo run --bin api
-```
-
-The API runs on port 3000 by default (configurable via PORT env var).
-
-Health check: `GET /health`
-
-## Development
-
-This is a Cargo workspace with three crates:
-- `common`: Shared database models
-- `ingestion`: Data ingestion service
-- `api`: REST API service
+- `DATABASE_URL` - PostgreSQL connection string
+- `PURE_API_KEY` - Pure marketplace API key
