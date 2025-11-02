@@ -20,6 +20,7 @@ struct TransactionWithProduct {
     sku: String,
     material: String,
     variant_label: String,
+    image_url: Option<String>,
     event_time: DateTime<Utc>,
     quantity: i32,
     price: f64,
@@ -39,6 +40,7 @@ struct Product {
     sku: String,
     material: String,
     variant_label: String,
+    image_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
@@ -65,6 +67,7 @@ struct ProductStats {
     material: String,
     name: String,
     sku: String,
+    image_url: Option<String>,
     transaction_count: i64,
     buy_count: i64,
     sell_count: i64,
@@ -142,6 +145,7 @@ async fn get_transactions(State(pool): State<PgPool>) -> Json<TransactionsRespon
             p.sku,
             p.material,
             p.variant_label,
+            p.image_url,
             t.event_time,
             t.quantity,
             t.price::FLOAT8 as price,
@@ -174,7 +178,8 @@ async fn get_product(
             name,
             sku,
             material,
-            variant_label
+            variant_label,
+            image_url
         FROM products
         WHERE pure_product_id = $1
         ORDER BY variant_label
@@ -228,6 +233,7 @@ async fn get_product_stats(State(pool): State<PgPool>) -> Json<ProductStatsRespo
             p.material,
             p.name,
             MIN(p.sku) as sku,
+            MIN(p.image_url) as image_url,
             COUNT(t.id) as transaction_count,
             COUNT(t.id) FILTER (WHERE t.event_type = 'buy') as buy_count,
             COUNT(t.id) FILTER (WHERE t.event_type = 'sell') as sell_count,

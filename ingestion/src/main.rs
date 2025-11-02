@@ -87,19 +87,21 @@ async fn upsert_products(pool: &PgPool, products: &[NewProduct]) -> Result<()> {
                 sku,
                 material,
                 variant_label,
+                image_url,
                 highest_offer_spot_premium,
                 lowest_listing_spot_premium,
                 market_data_updated_at,
                 created_at,
                 updated_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
             ON CONFLICT (pure_product_id, pure_variant_id)
             DO UPDATE SET
                 name = EXCLUDED.name,
                 sku = EXCLUDED.sku,
                 material = EXCLUDED.material,
                 variant_label = EXCLUDED.variant_label,
+                image_url = EXCLUDED.image_url,
                 highest_offer_spot_premium = EXCLUDED.highest_offer_spot_premium,
                 lowest_listing_spot_premium = EXCLUDED.lowest_listing_spot_premium,
                 market_data_updated_at = EXCLUDED.market_data_updated_at,
@@ -112,6 +114,7 @@ async fn upsert_products(pool: &PgPool, products: &[NewProduct]) -> Result<()> {
         .bind(&product.sku)
         .bind(&product.material)
         .bind(&product.variant_label)
+        .bind(&product.image_url)
         .bind(product.highest_offer_spot_premium)
         .bind(product.lowest_listing_spot_premium)
         .bind(product.market_data_updated_at)

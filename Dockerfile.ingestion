@@ -15,6 +15,7 @@ COPY migrations ./migrations
 # Build the ingestion binaries
 RUN cargo build --release --bin ingestion
 RUN cargo build --release --bin backfill_event_types
+RUN cargo build --release --bin backfill_image_urls
 
 # Runtime stage
 FROM debian:bookworm-slim
@@ -29,6 +30,7 @@ WORKDIR /app
 # Copy the binaries from builder
 COPY --from=builder /usr/src/app/target/release/ingestion /app/ingestion
 COPY --from=builder /usr/src/app/target/release/backfill_event_types /app/backfill_event_types
+COPY --from=builder /usr/src/app/target/release/backfill_image_urls /app/backfill_image_urls
 
 # Copy migrations
 COPY --from=builder /usr/src/app/migrations /app/migrations

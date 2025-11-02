@@ -4,6 +4,7 @@ export interface Transaction {
   sku: string;
   material: string;
   variant_label: string;
+  image_url: string | null;
   event_time: string;
   quantity: number;
   price: number;
@@ -21,6 +22,7 @@ export interface Product {
   sku: string;
   material: string;
   variant_label: string;
+  image_url: string | null;
 }
 
 export interface ProductTransaction {
@@ -44,6 +46,7 @@ export interface ProductStats {
   material: string;
   name: string;
   sku: string;
+  image_url: string | null;
   transaction_count: number;
   buy_count: number;
   sell_count: number;

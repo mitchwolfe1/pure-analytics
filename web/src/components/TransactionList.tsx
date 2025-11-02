@@ -179,6 +179,9 @@ export function TransactionList({ onProductClick }: TransactionListProps) {
           <table className="min-w-full bg-slate-900">
             <thead className="bg-slate-800 text-white">
               <tr>
+                <th className="px-6 py-3 text-left text-sm font-semibold">
+                  Image
+                </th>
                 <th
                   className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                   onClick={() => handleSort('event_time')}
@@ -243,6 +246,20 @@ export function TransactionList({ onProductClick }: TransactionListProps) {
             <tbody className="divide-y divide-slate-700">
               {sortedTransactions.map((tx, index) => (
                 <tr key={index} className="hover:bg-slate-700 transition-colors">
+                  <td className="px-6 py-4">
+                    {tx.image_url ? (
+                      <img
+                        src={tx.image_url}
+                        alt={tx.name}
+                        loading="lazy"
+                        className="w-16 h-16 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-slate-800 rounded-lg flex items-center justify-center text-gray-500 text-xs">
+                        No image
+                      </div>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-300">
                     {new Date(tx.event_time).toLocaleString(undefined, {
                       year: 'numeric',

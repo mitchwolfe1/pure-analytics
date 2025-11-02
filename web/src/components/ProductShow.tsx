@@ -173,42 +173,55 @@ export function ProductShow({ productId, onBack }: ProductShowProps) {
           </h1>
 
           <div className="bg-slate-900 rounded-lg p-6 mb-6">
-            <div className="mb-4">
-              <div className="text-sm text-gray-400 mb-2">Material</div>
-              <span
-                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getMaterialBadgeClass(data.variants[0]?.material || "")}`}
-              >
-                {data.variants[0]?.material}
-              </span>
+            <div className="flex gap-6 mb-6">
+              {data.variants[0]?.image_url ? (
+                <img
+                  src={data.variants[0].image_url}
+                  alt={data.variants[0].name}
+                  className="w-64 h-64 object-cover rounded-lg shadow-lg"
+                />
+              ) : (
+                <div className="w-64 h-64 bg-slate-800 rounded-lg flex items-center justify-center text-gray-500">
+                  No image available
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="mb-4">
+                  <div className="text-sm text-gray-400 mb-2">Material</div>
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getMaterialBadgeClass(data.variants[0]?.material || "")}`}
+                  >
+                    {data.variants[0]?.material}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <div className="text-sm text-gray-400 mb-2">
-                Variants ({data.variants.length})
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {data.variants.map((variant, index) => (
-                  <div
-                    key={index}
-                    className="bg-slate-800 rounded-lg p-3 border border-slate-700"
-                  >
-                    <div className="text-sm text-white font-medium mb-1">
-                      {variant.variant_label}
-                    </div>
-                    <div className="text-xs text-gray-400 mb-2">
-                      SKU: {variant.sku}
-                    </div>
-                    <a
-                      href={`https://www.collectpure.com/marketplace/product/${variant.sku}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-400 hover:text-emerald-300 text-xs"
-                    >
-                      View on Pure →
-                    </a>
+            <div className="text-sm text-gray-400 mb-2">
+              Variants ({data.variants.length})
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {data.variants.map((variant, index) => (
+                <div
+                  key={index}
+                  className="bg-slate-800 rounded-lg p-3 border border-slate-700"
+                >
+                  <div className="text-sm text-white font-medium mb-1">
+                    {variant.variant_label}
                   </div>
-                ))}
-              </div>
+                  <div className="text-xs text-gray-400 mb-2">
+                    SKU: {variant.sku}
+                  </div>
+                  <a
+                    href={`https://www.collectpure.com/marketplace/product/${variant.sku}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-400 hover:text-emerald-300 text-xs"
+                  >
+                    View on Pure →
+                  </a>
+                </div>
+              ))}
             </div>
           </div>
         </div>

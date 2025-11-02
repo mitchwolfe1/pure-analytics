@@ -52,6 +52,7 @@ pub struct ProductData {
     pub title: String,
     pub sku: String,
     pub material: String,
+    pub images: Option<Vec<String>>,
     pub variants: Vec<VariantData>,
 }
 
@@ -61,6 +62,7 @@ pub struct VariantData {
     pub title: String,
     pub highest_offer: Option<MarketData>,
     pub lowest_listing: Option<MarketData>,
+    pub images: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -239,16 +241,30 @@ impl PureApiClient {
             .into_iter()
             .filter_map(|variant| {
                 product_map.get(&variant.pure_product_id).map(|product| {
-                    // Find the matching variant by title to get market data
-                    let (highest_offer_premium, lowest_listing_premium) = product.variants
+                    // Find the matching variant by title to get market data and image
+                    let matching_variant = product.variants
                         .iter()
-                        .find(|v| v.title == variant.pure_variant_label)
+                        .find(|v| v.title == variant.pure_variant_label);
+
+                    let (highest_offer_premium, lowest_listing_premium) = matching_variant
                         .map(|v| {
                             let highest = v.highest_offer.as_ref().map(|o| o.spot_premium);
                             let lowest = v.lowest_listing.as_ref().map(|l| l.spot_premium);
                             (highest, lowest)
                         })
                         .unwrap_or((None, None));
+
+                    // Try to get image from variant first, then fall back to product image
+                    let image_url = matching_variant
+                        .and_then(|v| v.images.as_ref())
+                        .and_then(|imgs| imgs.first())
+                        .cloned()
+                        .or_else(|| {
+                            // Fallback to product images if variant has no images
+                            product.images.as_ref()
+                                .and_then(|imgs| imgs.first())
+                                .cloned()
+                        });
 
                     NewProduct {
                         pure_product_id: variant.pure_product_id,
@@ -257,6 +273,7 @@ impl PureApiClient {
                         sku: product.sku.clone(),
                         material: product.material.clone(),
                         variant_label: variant.pure_variant_label,
+                        image_url,
                         highest_offer_spot_premium: highest_offer_premium,
                         lowest_listing_spot_premium: lowest_listing_premium,
                         market_data_updated_at: Some(chrono::Utc::now()),
