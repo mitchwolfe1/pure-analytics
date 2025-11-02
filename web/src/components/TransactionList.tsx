@@ -26,7 +26,7 @@ type SortColumn = 'event_time' | 'material' | 'name' | 'quantity' | 'price' | 't
 type SortDirection = 'asc' | 'desc';
 
 interface TransactionListProps {
-  onProductClick: (sku: string) => void;
+  onProductClick: (productId: string) => void;
 }
 
 export function TransactionList({ onProductClick }: TransactionListProps) {
@@ -198,6 +198,11 @@ export function TransactionList({ onProductClick }: TransactionListProps) {
                   Product <SortIcon column="name" />
                 </th>
                 <th
+                  className="px-6 py-3 text-left text-sm font-semibold"
+                >
+                  Variant
+                </th>
+                <th
                   className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                   onClick={() => handleSort('quantity')}
                 >
@@ -255,12 +260,13 @@ export function TransactionList({ onProductClick }: TransactionListProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-white">
                     <button
-                      onClick={() => onProductClick(tx.sku)}
+                      onClick={() => onProductClick(tx.pure_product_id)}
                       className="text-emerald-400 hover:text-emerald-300 hover:underline cursor-pointer text-left"
                     >
                       {tx.name}
                     </button>
                   </td>
+                  <td className="px-6 py-4 text-sm text-gray-300">{tx.variant_label}</td>
                   <td className="px-6 py-4 text-sm text-gray-300">{tx.quantity}</td>
                   <td className="px-6 py-4 text-sm font-medium text-white">
                     ${(tx.price / 100).toFixed(2)}
@@ -275,15 +281,15 @@ export function TransactionList({ onProductClick }: TransactionListProps) {
                     ${(tx.spot_premium_dollar / 100).toFixed(2)}
                   </td>
                   <td className="px-6 py-4">
-                    {tx.event_type && (
+                    {(tx.event_type || tx.variant_label === 'Pure Priority') && (
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        tx.event_type === 'buy'
+                        tx.event_type === 'buy' || tx.variant_label === 'Pure Priority'
                           ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                           : tx.event_type === 'sell'
                           ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                           : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                       }`}>
-                        {tx.event_type.toUpperCase()}
+                        {tx.variant_label === 'Pure Priority' ? 'BUY' : tx.event_type?.toUpperCase()}
                       </span>
                     )}
                   </td>

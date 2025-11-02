@@ -15,9 +15,11 @@ use tracing::info;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 struct TransactionWithProduct {
+    pure_product_id: String,
     name: String,
     sku: String,
     material: String,
+    variant_label: String,
     event_time: DateTime<Utc>,
     quantity: i32,
     price: f64,
@@ -41,6 +43,8 @@ struct Product {
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 struct ProductTransaction {
+    sku: String,
+    variant_label: String,
     event_time: DateTime<Utc>,
     quantity: i32,
     price: f64,
@@ -51,12 +55,13 @@ struct ProductTransaction {
 
 #[derive(Debug, Serialize)]
 struct ProductDetailsResponse {
-    product: Product,
+    variants: Vec<Product>,
     transactions: Vec<ProductTransaction>,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 struct ProductStats {
+    pure_product_id: String,
     material: String,
     name: String,
     sku: String,
@@ -103,7 +108,7 @@ async fn main() -> Result<()> {
         .route("/health", get(health_check))
         .route("/transactions", get(get_transactions))
         .route("/products/stats", get(get_product_stats))
-        .route("/product/:sku", get(get_product))
+        .route("/product/:product_id", get(get_product))
         .layer(CorsLayer::permissive())
         .with_state(pool);
 
@@ -132,9 +137,11 @@ async fn get_transactions(State(pool): State<PgPool>) -> Json<TransactionsRespon
     let transactions = sqlx::query_as::<_, TransactionWithProduct>(
         r#"
         SELECT
+            p.pure_product_id,
             p.name,
             p.sku,
             p.material,
+            p.variant_label,
             t.event_time,
             t.quantity,
             t.price::FLOAT8 as price,
@@ -158,10 +165,10 @@ async fn get_transactions(State(pool): State<PgPool>) -> Json<TransactionsRespon
 
 async fn get_product(
     State(pool): State<PgPool>,
-    Path(sku): Path<String>,
+    Path(product_id): Path<String>,
 ) -> Json<ProductDetailsResponse> {
-    // Fetch product details
-    let product = sqlx::query_as::<_, Product>(
+    // Fetch all variants for this product
+    let variants = sqlx::query_as::<_, Product>(
         r#"
         SELECT
             name,
@@ -169,26 +176,24 @@ async fn get_product(
             material,
             variant_label
         FROM products
-        WHERE sku = $1
+        WHERE pure_product_id = $1
+        ORDER BY variant_label
         "#
     )
-    .bind(&sku)
-    .fetch_one(&pool)
+    .bind(&product_id)
+    .fetch_all(&pool)
     .await
     .unwrap_or_else(|e| {
-        tracing::error!("Failed to fetch product {}: {}", sku, e);
-        Product {
-            name: "Unknown".to_string(),
-            sku: sku.clone(),
-            material: "Unknown".to_string(),
-            variant_label: "Unknown".to_string(),
-        }
+        tracing::error!("Failed to fetch product variants for {}: {}", product_id, e);
+        Vec::new()
     });
 
-    // Fetch all transactions for this product
+    // Fetch all transactions for all variants of this product
     let transactions = sqlx::query_as::<_, ProductTransaction>(
         r#"
         SELECT
+            p.sku,
+            p.variant_label,
             t.event_time,
             t.quantity,
             t.price::FLOAT8 as price,
@@ -197,20 +202,20 @@ async fn get_product(
             t.event_type
         FROM transactions t
         INNER JOIN products p ON t.product_id = p.id
-        WHERE p.sku = $1
+        WHERE p.pure_product_id = $1
         ORDER BY t.event_time DESC
         "#
     )
-    .bind(&sku)
+    .bind(&product_id)
     .fetch_all(&pool)
     .await
     .unwrap_or_else(|e| {
-        tracing::error!("Failed to fetch transactions for product {}: {}", sku, e);
+        tracing::error!("Failed to fetch transactions for product {}: {}", product_id, e);
         Vec::new()
     });
 
     Json(ProductDetailsResponse {
-        product,
+        variants,
         transactions,
     })
 }
@@ -219,9 +224,10 @@ async fn get_product_stats(State(pool): State<PgPool>) -> Json<ProductStatsRespo
     let products = sqlx::query_as::<_, ProductStats>(
         r#"
         SELECT
+            p.pure_product_id,
             p.material,
             p.name,
-            p.sku,
+            MIN(p.sku) as sku,
             COUNT(t.id) as transaction_count,
             COUNT(t.id) FILTER (WHERE t.event_type = 'buy') as buy_count,
             COUNT(t.id) FILTER (WHERE t.event_type = 'sell') as sell_count,
@@ -237,7 +243,7 @@ async fn get_product_stats(State(pool): State<PgPool>) -> Json<ProductStatsRespo
             SUM(t.price * t.quantity) FILTER (WHERE t.event_type = 'sell')::FLOAT8 as total_sell_amount
         FROM products p
         LEFT JOIN transactions t ON p.id = t.product_id
-        GROUP BY p.id, p.material, p.name, p.sku
+        GROUP BY p.pure_product_id, p.material, p.name
         ORDER BY total_volume DESC NULLS LAST
         "#
     )

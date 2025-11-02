@@ -37,7 +37,7 @@ type SortColumn =
 type SortDirection = "asc" | "desc";
 
 interface ProductStatsProps {
-  onProductClick: (sku: string) => void;
+  onProductClick: (productId: string) => void;
 }
 
 export function ProductStatsComponent({ onProductClick }: ProductStatsProps) {
@@ -355,7 +355,7 @@ export function ProductStatsComponent({ onProductClick }: ProductStatsProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-white">
                     <button
-                      onClick={() => onProductClick(product.sku)}
+                      onClick={() => onProductClick(product.pure_product_id)}
                       className="text-emerald-400 hover:text-emerald-300 hover:underline cursor-pointer text-left"
                     >
                       {product.name}

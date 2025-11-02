@@ -32,11 +32,11 @@ type SortColumn =
 type SortDirection = "asc" | "desc";
 
 interface ProductShowProps {
-  sku: string;
+  productId: string;
   onBack: () => void;
 }
 
-export function ProductShow({ sku, onBack }: ProductShowProps) {
+export function ProductShow({ productId, onBack }: ProductShowProps) {
   const [data, setData] = useState<ProductDetailsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function ProductShow({ sku, onBack }: ProductShowProps) {
     async function loadProductDetails() {
       try {
         setLoading(true);
-        const productData = await fetchProductDetails(sku);
+        const productData = await fetchProductDetails(productId);
         setData(productData);
         setError(null);
       } catch (err) {
@@ -60,7 +60,7 @@ export function ProductShow({ sku, onBack }: ProductShowProps) {
     }
 
     loadProductDetails();
-  }, [sku]);
+  }, [productId]);
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
@@ -169,43 +169,45 @@ export function ProductShow({ sku, onBack }: ProductShowProps) {
           </button>
 
           <h1 className="text-4xl font-medium mb-4 text-white">
-            {data.product.name}
+            {data.variants[0]?.name || "Product"}
           </h1>
 
           <div className="bg-slate-900 rounded-lg p-6 mb-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <div className="text-sm text-gray-400 mb-1">SKU</div>
-                <div className="text-lg font-medium text-white">
-                  {data.product.sku}
-                </div>
+            <div className="mb-4">
+              <div className="text-sm text-gray-400 mb-2">Material</div>
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getMaterialBadgeClass(data.variants[0]?.material || "")}`}
+              >
+                {data.variants[0]?.material}
+              </span>
+            </div>
+
+            <div>
+              <div className="text-sm text-gray-400 mb-2">
+                Variants ({data.variants.length})
               </div>
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Material</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getMaterialBadgeClass(data.product.material)}`}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {data.variants.map((variant, index) => (
+                  <div
+                    key={index}
+                    className="bg-slate-800 rounded-lg p-3 border border-slate-700"
                   >
-                    {data.product.material}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Variant</div>
-                <div className="text-lg font-medium text-white">
-                  {data.product.variant_label}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-400 mb-1">External Link</div>
-                <a
-                  href={`https://www.collectpure.com/marketplace/product/${data.product.sku}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-emerald-400 hover:text-emerald-300 text-sm"
-                >
-                  View on Pure →
-                </a>
+                    <div className="text-sm text-white font-medium mb-1">
+                      {variant.variant_label}
+                    </div>
+                    <div className="text-xs text-gray-400 mb-2">
+                      SKU: {variant.sku}
+                    </div>
+                    <a
+                      href={`https://www.collectpure.com/marketplace/product/${variant.sku}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-400 hover:text-emerald-300 text-xs"
+                    >
+                      View on Pure →
+                    </a>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -250,6 +252,11 @@ export function ProductShow({ sku, onBack }: ProductShowProps) {
                     onClick={() => handleSort("event_time")}
                   >
                     Date <SortIcon column="event_time" />
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-sm font-semibold"
+                  >
+                    Variant
                   </th>
                   <th
                     className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
@@ -306,6 +313,9 @@ export function ProductShow({ sku, onBack }: ProductShowProps) {
                       })}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-300">
+                      {tx.variant_label}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-300">
                       {tx.quantity}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-white">
@@ -321,17 +331,17 @@ export function ProductShow({ sku, onBack }: ProductShowProps) {
                       ${(tx.spot_premium_dollar / 100).toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
-                      {tx.event_type && (
+                      {(tx.event_type || tx.variant_label === "Pure Priority") && (
                         <span
                           className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            tx.event_type === "buy"
+                            tx.event_type === "buy" || tx.variant_label === "Pure Priority"
                               ? "bg-green-500/20 text-green-400 border border-green-500/30"
                               : tx.event_type === "sell"
                                 ? "bg-red-500/20 text-red-400 border border-red-500/30"
                                 : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
                           }`}
                         >
-                          {tx.event_type.toUpperCase()}
+                          {tx.variant_label === "Pure Priority" ? "BUY" : tx.event_type?.toUpperCase()}
                         </span>
                       )}
                     </td>

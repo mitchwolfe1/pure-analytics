@@ -12,8 +12,8 @@ export async function fetchTransactions(): Promise<TransactionsResponse> {
   return response.json();
 }
 
-export async function fetchProductDetails(sku: string): Promise<ProductDetailsResponse> {
-  const response = await fetch(`${API_BASE_URL}/product/${encodeURIComponent(sku)}`);
+export async function fetchProductDetails(productId: string): Promise<ProductDetailsResponse> {
+  const response = await fetch(`${API_BASE_URL}/product/${encodeURIComponent(productId)}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch product details: ${response.statusText}`);

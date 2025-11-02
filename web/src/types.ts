@@ -1,7 +1,9 @@
 export interface Transaction {
+  pure_product_id: string;
   name: string;
   sku: string;
   material: string;
+  variant_label: string;
   event_time: string;
   quantity: number;
   price: number;
@@ -22,6 +24,8 @@ export interface Product {
 }
 
 export interface ProductTransaction {
+  sku: string;
+  variant_label: string;
   event_time: string;
   quantity: number;
   price: number;
@@ -31,11 +35,12 @@ export interface ProductTransaction {
 }
 
 export interface ProductDetailsResponse {
-  product: Product;
+  variants: Product[];
   transactions: ProductTransaction[];
 }
 
 export interface ProductStats {
+  pure_product_id: string;
   material: string;
   name: string;
   sku: string;

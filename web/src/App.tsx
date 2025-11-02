@@ -7,19 +7,19 @@ type Page = 'transactions' | 'stats';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('transactions');
-  const [selectedSku, setSelectedSku] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  const handleProductClick = (sku: string) => {
-    setSelectedSku(sku);
+  const handleProductClick = (productId: string) => {
+    setSelectedProductId(productId);
   };
 
   const handleBackToList = () => {
-    setSelectedSku(null);
+    setSelectedProductId(null);
   };
 
   // Show product detail page if a product is selected
-  if (selectedSku) {
-    return <ProductShow sku={selectedSku} onBack={handleBackToList} />
+  if (selectedProductId) {
+    return <ProductShow productId={selectedProductId} onBack={handleBackToList} />
   }
 
   // Navigation bar
