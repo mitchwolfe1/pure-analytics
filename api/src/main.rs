@@ -55,6 +55,27 @@ struct ProductDetailsResponse {
     transactions: Vec<ProductTransaction>,
 }
 
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+struct ProductStats {
+    material: String,
+    name: String,
+    sku: String,
+    transaction_count: i64,
+    buy_count: i64,
+    sell_count: i64,
+    buy_sell_ratio: Option<f64>,
+    total_volume: Option<f64>,
+    total_buy_quantity: Option<i64>,
+    total_sell_quantity: Option<i64>,
+    total_buy_amount: Option<f64>,
+    total_sell_amount: Option<f64>,
+}
+
+#[derive(Debug, Serialize)]
+struct ProductStatsResponse {
+    products: Vec<ProductStats>,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Initialize tracing
@@ -81,7 +102,8 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/transactions", get(get_transactions))
-        .route("/products/:sku", get(get_product))
+        .route("/products/stats", get(get_product_stats))
+        .route("/product/:sku", get(get_product))
         .layer(CorsLayer::permissive())
         .with_state(pool);
 
@@ -191,4 +213,40 @@ async fn get_product(
         product,
         transactions,
     })
+}
+
+async fn get_product_stats(State(pool): State<PgPool>) -> Json<ProductStatsResponse> {
+    let products = sqlx::query_as::<_, ProductStats>(
+        r#"
+        SELECT
+            p.material,
+            p.name,
+            p.sku,
+            COUNT(t.id) as transaction_count,
+            COUNT(t.id) FILTER (WHERE t.event_type = 'buy') as buy_count,
+            COUNT(t.id) FILTER (WHERE t.event_type = 'sell') as sell_count,
+            CASE
+                WHEN COUNT(t.id) FILTER (WHERE t.event_type = 'sell') > 0
+                THEN (COUNT(t.id) FILTER (WHERE t.event_type = 'buy'))::FLOAT8 / (COUNT(t.id) FILTER (WHERE t.event_type = 'sell'))::FLOAT8
+                ELSE NULL
+            END as buy_sell_ratio,
+            SUM(t.price * t.quantity)::FLOAT8 as total_volume,
+            SUM(t.quantity) FILTER (WHERE t.event_type = 'buy') as total_buy_quantity,
+            SUM(t.quantity) FILTER (WHERE t.event_type = 'sell') as total_sell_quantity,
+            SUM(t.price * t.quantity) FILTER (WHERE t.event_type = 'buy')::FLOAT8 as total_buy_amount,
+            SUM(t.price * t.quantity) FILTER (WHERE t.event_type = 'sell')::FLOAT8 as total_sell_amount
+        FROM products p
+        LEFT JOIN transactions t ON p.id = t.product_id
+        GROUP BY p.id, p.material, p.name, p.sku
+        ORDER BY total_volume DESC NULLS LAST
+        "#
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap_or_else(|e| {
+        tracing::error!("Failed to fetch product stats: {}", e);
+        Vec::new()
+    });
+
+    Json(ProductStatsResponse { products })
 }

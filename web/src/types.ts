@@ -34,3 +34,22 @@ export interface ProductDetailsResponse {
   product: Product;
   transactions: ProductTransaction[];
 }
+
+export interface ProductStats {
+  material: string;
+  name: string;
+  sku: string;
+  transaction_count: number;
+  buy_count: number;
+  sell_count: number;
+  buy_sell_ratio: number | null;
+  total_volume: number | null;
+  total_buy_quantity: number | null;
+  total_sell_quantity: number | null;
+  total_buy_amount: number | null;
+  total_sell_amount: number | null;
+}
+
+export interface ProductStatsResponse {
+  products: ProductStats[];
+}
