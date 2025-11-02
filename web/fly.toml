@@ -4,9 +4,6 @@ primary_region = "sjc"
 [build]
   dockerfile = "Dockerfile"
 
-[env]
-  VITE_API_URL = "https://pure-analytics-api.fly.dev"
-
 [http_service]
   internal_port = 8080
   force_https = true

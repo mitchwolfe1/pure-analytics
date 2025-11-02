@@ -13,6 +13,7 @@ pub struct Transaction {
     pub spot_premium_percentage: f64,
     pub spot_premium_dollar: f64,
     pub event_time: DateTime<Utc>,
+    pub event_type: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -26,6 +27,9 @@ pub struct Product {
     pub sku: String,
     pub material: String,
     pub variant_label: String,
+    pub highest_offer_spot_premium: Option<f64>,
+    pub lowest_listing_spot_premium: Option<f64>,
+    pub market_data_updated_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -39,6 +43,9 @@ pub struct NewProduct {
     pub sku: String,
     pub material: String,
     pub variant_label: String,
+    pub highest_offer_spot_premium: Option<f64>,
+    pub lowest_listing_spot_premium: Option<f64>,
+    pub market_data_updated_at: Option<DateTime<Utc>>,
 }
 
 // Struct for inserting new transactions (without auto-generated fields)
@@ -52,4 +59,5 @@ pub struct NewTransaction {
     pub spot_premium_percentage: f64,
     pub spot_premium_dollar: f64,
     pub event_time: DateTime<Utc>,
+    pub event_type: Option<String>,
 }

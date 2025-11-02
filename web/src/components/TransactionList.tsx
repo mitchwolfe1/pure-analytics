@@ -22,10 +22,14 @@ function getMaterialBadgeClass(material: string): string {
   return 'bg-gray-500/20 text-gray-300 border border-gray-500/30';
 }
 
-type SortColumn = 'event_time' | 'material' | 'name' | 'quantity' | 'price' | 'total' | 'spot_premium_percentage' | 'spot_premium_dollar';
+type SortColumn = 'event_time' | 'material' | 'name' | 'quantity' | 'price' | 'total' | 'spot_premium_percentage' | 'spot_premium_dollar' | 'event_type';
 type SortDirection = 'asc' | 'desc';
 
-export function TransactionList() {
+interface TransactionListProps {
+  onProductClick: (sku: string) => void;
+}
+
+export function TransactionList({ onProductClick }: TransactionListProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +98,10 @@ export function TransactionList() {
       case 'spot_premium_dollar':
         aValue = a.spot_premium_dollar;
         bValue = b.spot_premium_dollar;
+        break;
+      case 'event_type':
+        aValue = a.event_type || 'zzz'; // Sort nulls last
+        bValue = b.event_type || 'zzz';
         break;
     }
 
@@ -219,6 +227,12 @@ export function TransactionList() {
                 >
                   Premium $ <SortIcon column="spot_premium_dollar" />
                 </th>
+                <th
+                  className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
+                  onClick={() => handleSort('event_type')}
+                >
+                  Type <SortIcon column="event_type" />
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
@@ -240,14 +254,12 @@ export function TransactionList() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-white">
-                    <a
-                      href={`https://www.collectpure.com/marketplace/product/${tx.sku}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-400 hover:text-emerald-300"
+                    <button
+                      onClick={() => onProductClick(tx.sku)}
+                      className="text-emerald-400 hover:text-emerald-300 hover:underline cursor-pointer text-left"
                     >
                       {tx.name}
-                    </a>
+                    </button>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-300">{tx.quantity}</td>
                   <td className="px-6 py-4 text-sm font-medium text-white">
@@ -261,6 +273,19 @@ export function TransactionList() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-300">
                     ${(tx.spot_premium_dollar / 100).toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4">
+                    {tx.event_type && (
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        tx.event_type === 'buy'
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : tx.event_type === 'sell'
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                      }`}>
+                        {tx.event_type.toUpperCase()}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

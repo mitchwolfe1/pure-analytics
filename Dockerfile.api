@@ -10,6 +10,7 @@ COPY migrations ./migrations
 
 RUN cargo build --release --bin api
 RUN cargo build --release --bin ingestion
+RUN cargo build --release --bin backfill_event_types
 
 FROM debian:bookworm-slim
 
@@ -21,6 +22,7 @@ WORKDIR /app
 
 COPY --from=builder /usr/src/app/target/release/api /app/api
 COPY --from=builder /usr/src/app/target/release/ingestion /app/ingestion
+COPY --from=builder /usr/src/app/target/release/backfill_event_types /app/backfill_event_types
 COPY --from=builder /usr/src/app/migrations /app/migrations
 
 ENV RUST_LOG=info

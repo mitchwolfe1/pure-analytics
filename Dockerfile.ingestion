@@ -12,8 +12,9 @@ COPY api ./api
 # Copy migrations
 COPY migrations ./migrations
 
-# Build the ingestion binary
+# Build the ingestion binaries
 RUN cargo build --release --bin ingestion
+RUN cargo build --release --bin backfill_event_types
 
 # Runtime stage
 FROM debian:bookworm-slim
@@ -25,8 +26,9 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy the binary from builder
+# Copy the binaries from builder
 COPY --from=builder /usr/src/app/target/release/ingestion /app/ingestion
+COPY --from=builder /usr/src/app/target/release/backfill_event_types /app/backfill_event_types
 
 # Copy migrations
 COPY --from=builder /usr/src/app/migrations /app/migrations

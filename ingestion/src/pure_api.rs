@@ -46,11 +46,27 @@ pub struct ProductsResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProductData {
     pub id: String,
     pub title: String,
     pub sku: String,
     pub material: String,
+    pub variants: Vec<VariantData>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VariantData {
+    pub title: String,
+    pub highest_offer: Option<MarketData>,
+    pub lowest_listing: Option<MarketData>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarketData {
+    pub spot_premium: f64,
 }
 
 // Product Activity API Response structures
@@ -223,6 +239,17 @@ impl PureApiClient {
             .into_iter()
             .filter_map(|variant| {
                 product_map.get(&variant.pure_product_id).map(|product| {
+                    // Find the matching variant by title to get market data
+                    let (highest_offer_premium, lowest_listing_premium) = product.variants
+                        .iter()
+                        .find(|v| v.title == variant.pure_variant_label)
+                        .map(|v| {
+                            let highest = v.highest_offer.as_ref().map(|o| o.spot_premium);
+                            let lowest = v.lowest_listing.as_ref().map(|l| l.spot_premium);
+                            (highest, lowest)
+                        })
+                        .unwrap_or((None, None));
+
                     NewProduct {
                         pure_product_id: variant.pure_product_id,
                         pure_variant_id: variant.pure_variant_id,
@@ -230,6 +257,9 @@ impl PureApiClient {
                         sku: product.sku.clone(),
                         material: product.material.clone(),
                         variant_label: variant.pure_variant_label,
+                        highest_offer_spot_premium: highest_offer_premium,
+                        lowest_listing_spot_premium: lowest_listing_premium,
+                        market_data_updated_at: Some(chrono::Utc::now()),
                     }
                 })
             })

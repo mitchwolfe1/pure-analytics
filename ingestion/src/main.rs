@@ -1,4 +1,5 @@
 mod config;
+mod event_type;
 mod pure_api;
 mod retry;
 
@@ -18,6 +19,13 @@ fn parse_activity_to_transaction(
 ) -> Result<NewTransaction> {
     let event_time = DateTime::parse_from_str(&event.created_at, "%Y-%m-%d %H:%M:%S%.f%#z")?;
 
+    // Calculate event type using market data from product
+    let event_type = event_type::determine_event_type(
+        event.spot_premium,
+        product.highest_offer_spot_premium,
+        product.lowest_listing_spot_premium,
+    );
+
     Ok(NewTransaction {
         product_id: product.id,
         pure_product_id: product.pure_product_id.clone(),
@@ -27,6 +35,7 @@ fn parse_activity_to_transaction(
         spot_premium_percentage: event.spot_premium,
         spot_premium_dollar: event.spot_premium_dollar,
         event_time: event_time.with_timezone(&chrono::Utc),
+        event_type: Some(event_type),
     })
 }
 
@@ -71,14 +80,29 @@ async fn upsert_products(pool: &PgPool, products: &[NewProduct]) -> Result<()> {
     for product in products {
         let result = sqlx::query(
             r#"
-            INSERT INTO products (pure_product_id, pure_variant_id, name, sku, material, variant_label, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+            INSERT INTO products (
+                pure_product_id,
+                pure_variant_id,
+                name,
+                sku,
+                material,
+                variant_label,
+                highest_offer_spot_premium,
+                lowest_listing_spot_premium,
+                market_data_updated_at,
+                created_at,
+                updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
             ON CONFLICT (pure_product_id, pure_variant_id)
             DO UPDATE SET
                 name = EXCLUDED.name,
                 sku = EXCLUDED.sku,
                 material = EXCLUDED.material,
                 variant_label = EXCLUDED.variant_label,
+                highest_offer_spot_premium = EXCLUDED.highest_offer_spot_premium,
+                lowest_listing_spot_premium = EXCLUDED.lowest_listing_spot_premium,
+                market_data_updated_at = EXCLUDED.market_data_updated_at,
                 updated_at = NOW()
             "#
         )
@@ -88,6 +112,9 @@ async fn upsert_products(pool: &PgPool, products: &[NewProduct]) -> Result<()> {
         .bind(&product.sku)
         .bind(&product.material)
         .bind(&product.variant_label)
+        .bind(product.highest_offer_spot_premium)
+        .bind(product.lowest_listing_spot_premium)
+        .bind(product.market_data_updated_at)
         .execute(pool)
         .await?;
 
@@ -115,8 +142,20 @@ async fn upsert_transactions_batch(pool: &PgPool, transactions: &[NewTransaction
     for transaction in transactions {
         let result = sqlx::query(
             r#"
-            INSERT INTO transactions (product_id, pure_product_id, pure_variant_id, price, quantity, spot_premium_percentage, spot_premium_dollar, event_time, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+            INSERT INTO transactions (
+                product_id,
+                pure_product_id,
+                pure_variant_id,
+                price,
+                quantity,
+                spot_premium_percentage,
+                spot_premium_dollar,
+                event_time,
+                event_type,
+                created_at,
+                updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
             ON CONFLICT (event_time, pure_product_id, pure_variant_id)
             DO UPDATE SET
                 product_id = EXCLUDED.product_id,
@@ -124,6 +163,7 @@ async fn upsert_transactions_batch(pool: &PgPool, transactions: &[NewTransaction
                 quantity = EXCLUDED.quantity,
                 spot_premium_percentage = EXCLUDED.spot_premium_percentage,
                 spot_premium_dollar = EXCLUDED.spot_premium_dollar,
+                event_type = EXCLUDED.event_type,
                 updated_at = NOW()
             "#
         )
@@ -135,6 +175,7 @@ async fn upsert_transactions_batch(pool: &PgPool, transactions: &[NewTransaction
         .bind(transaction.spot_premium_percentage)
         .bind(transaction.spot_premium_dollar)
         .bind(transaction.event_time)
+        .bind(&transaction.event_type)
         .execute(pool)
         .await?;
 
