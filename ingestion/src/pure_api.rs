@@ -285,20 +285,13 @@ impl PureApiClient {
 
     /// Orchestrates the full product building pipeline
     pub async fn build_new_products(&self) -> Result<Vec<NewProduct>> {
-        // Step 1: Fetch and flatten variants
         let variants = self.fetch_and_flatten_variants().await?;
 
-        // Step 2: Extract unique product IDs
         let product_ids = Self::deduplicate_product_ids(&variants);
         info!("Found {} unique products to fetch", product_ids.len());
 
-        // Step 3: Fetch product details in batches
         let products = self.fetch_products_in_batches(&product_ids).await?;
-
-        // Step 4: Build product map
         let product_map = Self::build_product_map(products);
-
-        // Step 5: Combine variants with product details
         let new_products = Self::combine_variants_with_products(variants, &product_map);
         info!("Built {} NewProduct models", new_products.len());
 

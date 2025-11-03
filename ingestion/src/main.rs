@@ -122,8 +122,6 @@ async fn upsert_products(pool: &PgPool, products: &[NewProduct]) -> Result<()> {
         .await?;
 
         if result.rows_affected() > 0 {
-            // Note: Can't easily distinguish between insert and update with ON CONFLICT
-            // but we know something happened
             upserted += 1;
         }
     }
@@ -278,11 +276,9 @@ async fn main() -> Result<()> {
 
     info!("Starting Pure Trading ingestion service");
 
-    // Load configuration
     let config = Config::from_env()?;
     info!("Configuration loaded successfully");
 
-    // Create database connection pool
     let pool = PgPoolOptions::new()
         .max_connections(config.database_max_connections)
         .acquire_timeout(config.database_acquire_timeout)
@@ -291,14 +287,12 @@ async fn main() -> Result<()> {
 
     info!("Database connection established");
 
-    // Run migrations
     sqlx::migrate!("../migrations")
         .run(&pool)
         .await?;
 
     info!("Database migrations completed");
 
-    // Initialize Pure API client
     let pure_client = PureApiClient::new(&config)?;
 
     // Start sync intervals

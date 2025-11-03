@@ -1,4 +1,3 @@
--- Drop and recreate market data columns with correct type
 ALTER TABLE products DROP COLUMN IF EXISTS highest_offer_spot_premium;
 ALTER TABLE products DROP COLUMN IF EXISTS lowest_listing_spot_premium;
 ALTER TABLE products DROP COLUMN IF EXISTS market_data_updated_at;
