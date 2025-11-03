@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ProductDetailsResponse } from "../types";
 import { fetchProductDetails } from "../api";
+import { BuySellDemandChart } from "./BuySellDemandChart";
 
 function getMaterialBadgeClass(material: string): string {
   const materialLower = material.toLowerCase();
@@ -195,6 +196,9 @@ export function ProductShow({ productId, onBack }: ProductShowProps) {
                   </span>
                 </div>
               </div>
+              <div className="flex-1" style={{ minHeight: '320px' }}>
+                <BuySellDemandChart transactions={data.transactions} compact={true} />
+              </div>
             </div>
 
             <div className="text-sm text-gray-400 mb-2">
@@ -261,48 +265,48 @@ export function ProductShow({ productId, onBack }: ProductShowProps) {
               <thead className="bg-slate-800 text-white">
                 <tr>
                   <th
-                    className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
+                    className="px-2 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                     onClick={() => handleSort("event_time")}
                   >
                     Date <SortIcon column="event_time" />
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-sm font-semibold"
+                    className="px-2 py-3 text-left text-sm font-semibold"
                   >
                     Variant
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
+                    className="px-2 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                     onClick={() => handleSort("quantity")}
                   >
                     Quantity <SortIcon column="quantity" />
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
+                    className="px-2 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                     onClick={() => handleSort("price")}
                   >
                     Rate <SortIcon column="price" />
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
+                    className="px-2 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                     onClick={() => handleSort("total")}
                   >
                     Total Amount <SortIcon column="total" />
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
+                    className="px-2 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                     onClick={() => handleSort("spot_premium_percentage")}
                   >
                     Premium % <SortIcon column="spot_premium_percentage" />
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
+                    className="px-2 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                     onClick={() => handleSort("spot_premium_dollar")}
                   >
                     Premium $ <SortIcon column="spot_premium_dollar" />
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
+                    className="px-2 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-slate-700 transition-colors select-none"
                     onClick={() => handleSort("event_type")}
                   >
                     Type <SortIcon column="event_type" />
@@ -315,35 +319,34 @@ export function ProductShow({ productId, onBack }: ProductShowProps) {
                     key={index}
                     className="hover:bg-slate-700 transition-colors"
                   >
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                    <td className="px-2 py-4 text-sm text-gray-300">
                       {new Date(tx.event_time).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
                         hour: "2-digit",
                         minute: "2-digit",
-                        timeZoneName: "short",
+                        hour12: true,
                       })}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                    <td className="px-2 py-4 text-sm text-gray-300">
                       {tx.variant_label}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                    <td className="px-2 py-4 text-sm text-gray-300">
                       {tx.quantity}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-white">
+                    <td className="px-2 py-4 text-sm font-medium text-white">
                       ${(tx.price / 100).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-white">
+                    <td className="px-2 py-4 text-sm font-medium text-white">
                       ${((tx.quantity * tx.price) / 100).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                    <td className="px-2 py-4 text-sm text-gray-300">
                       {tx.spot_premium_percentage.toFixed(2)}%
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                    <td className="px-2 py-4 text-sm text-gray-300">
                       ${(tx.spot_premium_dollar / 100).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 py-4">
                       {(tx.event_type || tx.variant_label === "Pure Priority") && (
                         <span
                           className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
