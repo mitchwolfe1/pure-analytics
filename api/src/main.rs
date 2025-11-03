@@ -3,12 +3,17 @@ use axum::{
     routing::get,
     Router,
     Json,
-    extract::{State, Path},
+    extract::{State, Path, ConnectInfo},
+    body::Body,
+    http::Request,
+    middleware::{self, Next},
+    response::Response,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::{PgPool, postgres::PgPoolOptions, FromRow};
+use std::net::SocketAddr;
 use std::time::Duration;
 use tower_http::cors::CorsLayer;
 use tracing::info;
@@ -112,6 +117,7 @@ async fn main() -> Result<()> {
         .route("/transactions", get(get_transactions))
         .route("/products/stats", get(get_product_stats))
         .route("/product/:product_id", get(get_product))
+        .layer(middleware::from_fn(log_request))
         .layer(CorsLayer::permissive())
         .with_state(pool);
 
@@ -124,9 +130,58 @@ async fn main() -> Result<()> {
     info!("API server listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>()
+    ).await?;
 
     Ok(())
+}
+
+async fn log_request(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    req: Request<Body>,
+    next: Next,
+) -> Response {
+    let method = req.method().clone();
+    let uri = req.uri().clone();
+    let headers = req.headers().clone();
+
+    // Log request with IP and headers
+    info!(
+        ip = %addr.ip(),
+        method = %method,
+        path = %uri.path(),
+        "Incoming request"
+    );
+
+    // Log headers (excluding sensitive ones)
+    for (name, value) in headers.iter() {
+        let name_str = name.as_str().to_lowercase();
+        // Skip logging authorization and cookie headers for security
+        if name_str != "authorization" && name_str != "cookie" {
+            if let Ok(value_str) = value.to_str() {
+                info!(
+                    ip = %addr.ip(),
+                    header = %name,
+                    value = %value_str,
+                    "Request header"
+                );
+            }
+        }
+    }
+
+    let response = next.run(req).await;
+
+    info!(
+        ip = %addr.ip(),
+        method = %method,
+        path = %uri.path(),
+        status = %response.status(),
+        "Request completed"
+    );
+
+    response
 }
 
 async fn health_check() -> Json<Value> {
